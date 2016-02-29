@@ -1,0 +1,43 @@
+D, [2016-02-29T13:16:41.552196 #13368] DEBUG -- : CelluloidPubsub::WebServer example starting on 0.0.0.0:1234
+D, [2016-02-29T13:16:41.563843 #13368] DEBUG -- : CelluloidPubsub::WebServer Received a WebSocket connection
+D, [2016-02-29T13:16:41.587031 #13368] DEBUG -- : CelluloidPubsub::Reactor Streaming changes for /ws
+D, [2016-02-29T13:16:41.588204 #13368] DEBUG -- : Subscriber websocket connection opened
+D, [2016-02-29T13:16:41.588782 #13368] DEBUG -- : Subscriber tries to subscribe to channel  test_channel
+D, [2016-02-29T13:16:41.595825 #13368] DEBUG -- : CelluloidPubsub::WebServer Received a WebSocket connection
+D, [2016-02-29T13:16:41.596982 #13368] DEBUG -- : Subscriber sends JSON {"client_action":"subscribe","channel":"test_channel"}
+D, [2016-02-29T13:16:41.599105 #13368] DEBUG -- : CelluloidPubsub::Reactor read message  {"client_action":"subscribe","channel":"test_channel"}
+D, [2016-02-29T13:16:41.599452 #13368] DEBUG -- : CelluloidPubsub::Reactor finds actions for  {"client_action"=>"subscribe", "channel"=>"test_channel"}
+D, [2016-02-29T13:16:41.600608 #13368] DEBUG -- : CelluloidPubsub::Reactor Streaming changes for /ws
+D, [2016-02-29T13:16:41.601328 #13368] DEBUG -- : Publisher websocket connection opened
+D, [2016-02-29T13:16:41.601563 #13368] DEBUG -- : CelluloidPubsub::Reactor subscribed to test_channel with {"client_action"=>"subscribe", "channel"=>"test_channel"}
+D, [2016-02-29T13:16:41.601705 #13368] DEBUG -- : Publisher tries to subscribe to channel  test_channel2
+D, [2016-02-29T13:16:41.602311 #13368] DEBUG -- : Publisher sends JSON {"client_action":"subscribe","channel":"test_channel2"}
+D, [2016-02-29T13:16:41.603309 #13368] DEBUG -- : Subscriber received JSON  {"client_action"=>"successful_subscription", "channel"=>"test_channel"}
+D, [2016-02-29T13:16:41.603358 #13368] DEBUG -- : CelluloidPubsub::Reactor read message  {"client_action":"subscribe","channel":"test_channel2"}
+D, [2016-02-29T13:16:41.603803 #13368] DEBUG -- : CelluloidPubsub::Reactor finds actions for  {"client_action"=>"subscribe", "channel"=>"test_channel2"}
+D, [2016-02-29T13:16:41.604568 #13368] DEBUG -- : Subscriber sends JSON {"client_action":"publish","channel":"test_channel2","data":{"data":" subscriber got successfull subscription"}}
+D, [2016-02-29T13:16:41.604942 #13368] DEBUG -- : CelluloidPubsub::Reactor subscribed to test_channel2 with {"client_action"=>"subscribe", "channel"=>"test_channel2"}
+D, [2016-02-29T13:16:41.605523 #13368] DEBUG -- : CelluloidPubsub::Reactor read message  {"client_action":"publish","channel":"test_channel2","data":{"data":" subscriber got successfull subscription"}}
+D, [2016-02-29T13:16:41.605993 #13368] DEBUG -- : CelluloidPubsub::Reactor finds actions for  {"client_action"=>"publish", "channel"=>"test_channel2", "data"=>{"data"=>" subscriber got successfull subscription"}}
+D, [2016-02-29T13:16:41.606791 #13368] DEBUG -- : Publisher received JSON  {"client_action"=>"successful_subscription", "channel"=>"test_channel2"}
+D, [2016-02-29T13:16:41.607485 #13368] DEBUG -- : Publisher sends JSON {"client_action":"publish","channel":"test_channel","data":{"data":" my_message"}}
+D, [2016-02-29T13:16:41.608224 #13368] DEBUG -- : CelluloidPubsub::Reactor read message  {"client_action":"publish","channel":"test_channel","data":{"data":" my_message"}}
+D, [2016-02-29T13:16:41.608553 #13368] DEBUG -- : Publisher received JSON  {"data"=>" subscriber got successfull subscription"}
+D, [2016-02-29T13:16:41.609440 #13368] DEBUG -- : CelluloidPubsub::Reactor finds actions for  {"client_action"=>"publish", "channel"=>"test_channel", "data"=>{"data"=>" my_message"}}
+D, [2016-02-29T13:16:41.610951 #13368] DEBUG -- : Subscriber received JSON  {"data"=>" my_message"}
+D, [2016-02-29T13:16:43.603956 #13368] DEBUG -- : Terminating 12 actors...
+D, [2016-02-29T13:16:43.604601 #13368] DEBUG -- : CelluloidPubsub::Client tries to 'shudown'
+W, [2016-02-29T13:16:43.605122 #13368]  WARN -- : Terminating task: type=:call, meta={:method_name=>:run}, status=:iowait
+	Celluloid::TaskFiber backtrace unavailable. Please try `Celluloid.task_class = Celluloid::TaskThread` if you need backtraces here.
+D, [2016-02-29T13:16:43.605375 #13368] DEBUG -- : CelluloidPubsub::WebServer tries to 'shudown'
+W, [2016-02-29T13:16:43.610465 #13368]  WARN -- : Terminating task: type=:call, meta={:method_name=>:run}, status=:iowait
+	Celluloid::TaskFiber backtrace unavailable. Please try `Celluloid.task_class = Celluloid::TaskThread` if you need backtraces here.
+W, [2016-02-29T13:16:43.605516 #13368]  WARN -- : Terminating task: type=:call, meta={:method_name=>:run}, status=:iowait
+	Celluloid::TaskFiber backtrace unavailable. Please try `Celluloid.task_class = Celluloid::TaskThread` if you need backtraces here.
+D, [2016-02-29T13:16:43.606016 #13368] DEBUG -- : CelluloidPubsub::Reactor tries to 'shudown'
+D, [2016-02-29T13:16:43.606142 #13368] DEBUG -- : CelluloidPubsub::Client tries to 'shudown'
+D, [2016-02-29T13:16:43.605704 #13368] DEBUG -- : CelluloidPubsub::Reactor tries to 'shudown'
+W, [2016-02-29T13:16:43.614788 #13368]  WARN -- : Terminating task: type=:call, meta={:method_name=>:run}, status=:iowait
+	Celluloid::TaskFiber backtrace unavailable. Please try `Celluloid.task_class = Celluloid::TaskThread` if you need backtraces here.
+W, [2016-02-29T13:16:43.613311 #13368]  WARN -- : Terminating task: type=:call, meta={:method_name=>:run}, status=:iowait
+	Celluloid::TaskFiber backtrace unavailable. Please try `Celluloid.task_class = Celluloid::TaskThread` if you need backtraces here.

@@ -8,6 +8,8 @@ Description
 
 CelluloidPubsubRedisAdapter is a simple ruby implementation of publish subscribe design patterns using celluloid actors and websockets, using Celluloid::Reel server and redis as a publish subscribe backend
 
+Starting with version 0.1.0 , support for celluloid 0.17 was added
+
 Requirements
 ------------
 

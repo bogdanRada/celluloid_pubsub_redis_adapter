@@ -7,10 +7,7 @@ module CelluloidPubsub
   # @!attribute connection
   #   @return [EM::Hiredis] The connection used for redis
   class RedisReactor < CelluloidPubsub::Reactor
-    include Celluloid
-    include Celluloid::IO
-    include Celluloid::Logger
-    include CelluloidPubsub::Helper
+    include CelluloidPubsub::BaseActor
 
     attr_accessor :connected, :connection
 

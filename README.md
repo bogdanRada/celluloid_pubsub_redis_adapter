@@ -60,7 +60,6 @@ Creating a client is simple as doing this. If you provide the channel when you i
 ```ruby
 class MyAwesomeClient
   include Celluloid
-  include Celluloid::Logger
 
   def initialize(options = {})
     @client = CelluloidPubsub::Client.new({

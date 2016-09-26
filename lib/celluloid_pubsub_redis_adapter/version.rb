@@ -15,7 +15,7 @@ module CelluloidPubsubRedisAdapter
     # major release version
     MAJOR = 0
     # minor release version
-    MINOR = 3
+    MINOR = 4
     # tiny release version
     TINY = 0
     # prelease version ( set this only if it is a prelease)

@@ -1,15 +1,27 @@
-sudo: false
-cache: bundler
 language: ruby
+sudo: false
+
+cache: bundler
+
+bundler_args: --binstubs=./bin
+
 before_install:
   - "echo 'gem: --no-ri --no-rdoc' > ~/.gemrc"
   - gem install bundler
+  - gem update bundler
+
+before_script:
+  - bundle update
+
+install:
+- bundle install --path vendor/bundle
+
+script: bundle exec rake
+
 rvm:
-- 1.9.3
-- 2.0.0
-- 2.1.5
 - 2.2.2
-- 2.2.3
+- 2.2.5
+- 2.3.1
 env:
  - RAILS_ENV=test RACK_ENV=test
 notifications:

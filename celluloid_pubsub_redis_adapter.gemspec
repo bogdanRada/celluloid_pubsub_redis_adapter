@@ -16,7 +16,7 @@ Gem::Specification.new do |s|
   s.test_files = s.files.grep(/^(spec)/)
   s.require_paths = ['lib']
 
-  s.add_runtime_dependency 'celluloid_pubsub', '~> 0.9', '>= 0.9'
+  s.add_runtime_dependency 'celluloid_pubsub', '~> 1.0', '>= 1.0.1'
   s.add_runtime_dependency 'em-hiredis', '~> 0.3', '>= 0.3.0'
 
   s.add_development_dependency 'rspec', '~> 3.4', '>= 3.4'

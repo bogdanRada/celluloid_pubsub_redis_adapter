@@ -28,7 +28,7 @@ module CelluloidPubsub
     # @return [void]
     #
     # @api public
-    def unsubscribe(channel)
+    def unsubscribe(channel, data)
       super
       async.redis_action('unsubscribe', channel)
     end
@@ -61,7 +61,7 @@ module CelluloidPubsub
     # @return [void]
     #
     # @api public
-    def unsubscribe_all
+    def unsubscribe_all(channel, data)
       info 'clearing connections'
       shutdown
     end
@@ -74,7 +74,7 @@ module CelluloidPubsub
     # @api public
     def shutdown
       @channels.dup.each do |channel|
-        redis_action('unsubscribe', channel)
+        redis_action('unsubscribe', channel) unless ENV['RACK_ENV'] == 'test'
       end if @channels.present?
       super
     end
@@ -84,7 +84,7 @@ module CelluloidPubsub
     # @return [void]
     #
     # @api public
-    def publish_event(topic, data)
+    def server_pusblish_event(topic, data)
       return if topic.blank? || data.blank?
       connect_to_redis do |connection|
         connection.publish(topic, data)

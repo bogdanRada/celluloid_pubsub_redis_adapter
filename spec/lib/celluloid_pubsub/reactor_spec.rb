@@ -5,6 +5,7 @@ require 'spec_helper'
 describe CelluloidPubsub::RedisReactor do
   let(:websocket) { mock }
   let(:server) { mock }
+  let(:mutex) { mock }
 
   before(:each) do
     subject.stubs(:async).returns(subject)
@@ -13,6 +14,7 @@ describe CelluloidPubsub::RedisReactor do
     server.stubs(:handle_dispatched_message)
     server.stubs(:subscribers).returns({})
     server.stubs(:redis_enabled?).returns(false)
+    server.stubs(:adapter).returns(CelluloidPubsub::RedisReactor)
     websocket.stubs(:read)
     websocket.stubs(:url)
     websocket.stubs(:close)
@@ -22,6 +24,8 @@ describe CelluloidPubsub::RedisReactor do
     subject.stubs(:run)
     subject.work(websocket, server)
     subject.stubs(:unsubscribe_from_channel).returns(true)
+    server.stubs(:mutex).returns(mutex)
+    mutex.stubs(:synchronize).yields(server)
     Celluloid::Actor.stubs(:kill).returns(true)
   end
 
@@ -76,47 +80,46 @@ describe CelluloidPubsub::RedisReactor do
 
   describe '#handle_parsed_websocket_message' do
     it 'handle_websocket_message with a hash' do
-      data = { 'client_action' => 'b' }
+      data = { 'client_action' => 'subscribe' }
       data.expects(:stringify_keys).returns(data)
       subject.expects(:delegate_action).with(data)
       subject.handle_parsed_websocket_message(data)
     end
 
     it 'handle_websocket_message with something else than a hash' do
-      data = 'some message'
-      subject.expects(:handle_unknown_action).with(data)
+      data = { 'message'=> 'some message' }
+      subject.expects(:handle_unknown_action).with(data['channel'], data)
       subject.handle_parsed_websocket_message(data)
     end
   end
 
   describe '#delegate_action' do
+    before(:each) do
+      subject.stubs(:unsubscribe_clients).returns(true)
+      subject.stubs(:shutdown).returns(true)
+    end
+
     it 'unsubscribes all' do
-      data = { 'client_action' => 'unsubscribe_all' }
-      subject.expects(:unsubscribe_all).returns('bla')
+      data = { 'client_action' => 'unsubscribe_all', 'channel' => '' }
+      subject.expects(:send).with(data['client_action'], data['channel'], data).returns('bla')
       subject.delegate_action(data)
     end
 
     it 'unsubscribes all' do
       data = { 'client_action' => 'unsubscribe', 'channel' => 'some channel' }
-      subject.expects(:unsubscribe).with(data['channel'])
+      subject.expects(:send).with(data['client_action'], data['channel'], data)
       subject.delegate_action(data)
     end
-
+    #
     it 'subscribes to channell' do
       data = { 'client_action' => 'subscribe', 'channel' => 'some channel' }
-      subject.expects(:start_subscriber).with(data['channel'], data)
+      subject.expects(:send).with(data['client_action'], data['channel'], data)
       subject.delegate_action(data)
     end
 
     it 'publish' do
       data = { 'client_action' => 'publish', 'channel' => 'some channel', 'data' => 'some data' }
-      subject.expects(:publish_event).with(data['channel'], data['data'].to_json)
-      subject.delegate_action(data)
-    end
-
-    it 'handles unknown' do
-      data = { 'client_action' => 'some action', 'channel' => 'some channel' }
-      subject.expects(:handle_unknown_action).with(data)
+      subject.expects(:send).with(data['client_action'], data['channel'], data)
       subject.delegate_action(data)
     end
   end
@@ -124,41 +127,67 @@ describe CelluloidPubsub::RedisReactor do
   describe '#handle_unknown_action' do
     it 'handles unknown' do
       data = 'some data'
+      channel = "some_channel"
       server.expects(:handle_dispatched_message)
-      subject.handle_unknown_action(data)
+      subject.handle_unknown_action(channel, data)
     end
   end
 
   describe '#unsubscribe_client' do
     let(:channel) { 'some channel' }
+      let(:data) { {'client_action' => 'unsubscribe', 'channel' => channel } }
+
+      before(:each) do
+        subject.stubs(:redis_action).returns(nil)
+      end
+
     it 'returns nil' do
-      act = subject.unsubscribe('')
+
+      act = subject.unsubscribe('', data)
+      expect(act).to eq(nil)
+    end
+
+    it 'unsubscribes' do
+      channel.stubs(:present?).returns(true)
+      subject.expects(:forget_channel).with(channel)
+      subject.expects(:delete_server_subscribers).with(channel)
+      act = subject.unsubscribe(channel, data)
+      expect(act).to eq(nil)
+    end
+   end
+
+  describe '#delete_server_subscribers' do
+    let(:channel) { 'some channel' }
+
+    before(:each) do
+      server.stubs(:subscribers).returns("#{channel}" => [{ reactor: subject }])
+    end
+
+    it 'unsubscribes' do
+      act = subject.delete_server_subscribers(channel)
+      expect(server.subscribers[channel]).to eq([])
+    end
+  end
+
+  describe '#forget_channel' do
+    let(:channel) { 'some channel' }
+
+    it 'unsubscribes' do
+      subject.channels.stubs(:blank?).returns(true)
+      subject.websocket.expects(:close)
+      act = subject.forget_channel(channel)
       expect(act).to eq(nil)
     end
 
     it 'unsubscribes' do
       subject.channels.stubs(:blank?).returns(false)
       subject.channels.expects(:delete).with(channel)
-      act = subject.unsubscribe(channel)
-      expect(act).to eq([])
-    end
-
-    it 'unsubscribes' do
-      subject.channels.stubs(:blank?).returns(true)
-      subject.websocket.expects(:close)
-      act = subject.unsubscribe(channel)
-      expect(act).to eq([])
-    end
-
-    it 'unsubscribes' do
-      subject.channels.stubs(:blank?).returns(false)
-      subject.channels.stubs(:delete)
-      server.stubs(:subscribers).returns("#{channel}" => [{ reactor: subject }])
-      subject.unsubscribe(channel)
-      expect(server.subscribers[channel]).to eq([])
+    #  server.stubs(:subscribers).returns("#{channel}" => [{ reactor: subject }])
+      subject.forget_channel(channel)
+    #  expect(server.subscribers[channel]).to eq([])
     end
   end
-
+  #
   describe '#shutdown' do
     it 'shutdowns' do
       subject.expects(:terminate)
@@ -171,32 +200,25 @@ describe CelluloidPubsub::RedisReactor do
     let(:message) { { a: 'b' } }
 
     it 'subscribes ' do
-      act = subject.start_subscriber('', message)
+      act = subject.subscribe('', message)
       expect(act).to eq(nil)
     end
 
     it 'subscribes ' do
       subject.stubs(:add_subscriber_to_channel).with(channel, message)
-      server.stubs(:redis_enabled?).returns(false)
-      subject.websocket.expects(:<<).with(message.merge('client_action' => 'successful_subscription', 'channel' => channel).to_json)
-      subject.start_subscriber(channel, message)
+      subject.subscribe(channel, message)
     end
 
-    #    it 'raises error' do
-    #      subject.stubs(:add_subscriber_to_channel).raises(StandardError)
-    #
-    #      expect do
-    #        subject.start_subscriber(channel, message)
-    #      end.to raise_error(StandardError) { |e|
-    #        expect(e.message).to include(channel)
-    #      }
-    #    end
   end
 
   describe '#add_subscriber_to_channel' do
     let(:channel) { 'some channel' }
     let(:message) { { a: 'b' } }
     let(:subscribers) { mock }
+
+    before(:each) do
+      subject.stubs(:redis_action).returns(nil)
+    end
 
     it 'adds subscribed' do
       CelluloidPubsub::Registry.channels.stubs(:include?).with(channel).returns(false)
@@ -213,9 +235,10 @@ describe CelluloidPubsub::RedisReactor do
     let(:message) { { a: 'b' } }
 
     it 'adds subscribed' do
+      subject.stubs(:shutdown).returns(true)
       CelluloidPubsub::Registry.stubs(:channels).returns([channel])
-      subject.expects(:unsubscribe_from_channel).with(channel)
-      subject.unsubscribe_all
+    #  subject.expects(:unsubscribe_clients)
+      subject.unsubscribe_all(channel, message)
     end
   end
 end

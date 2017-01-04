@@ -26,7 +26,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'coveralls', '~> 0.8'
   s.add_development_dependency 'rake', '~> 12.0'
   s.add_development_dependency 'yard', '~> 0.8'
-  s.add_development_dependency 'redcarpet', '~> 3.3'
+  s.add_development_dependency 'redcarpet', '~> 3.4'
   s.add_development_dependency 'github-markup', '~> 1.4'
   s.add_development_dependency 'inch', '~> 0.7'
 end

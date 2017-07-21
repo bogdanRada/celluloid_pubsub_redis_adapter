@@ -13,7 +13,7 @@ module CelluloidPubsub
     # @api public
     def unsubscribe(websocket, channel, data)
       super(websocket, channel, data)
-      async.redis_action('unsubscribe', channel)
+      async.redis_action('unsubscribe', websocket, channel)
     end
 
     # method used to subscribe to a channel
@@ -24,7 +24,7 @@ module CelluloidPubsub
     # @api public
     def add_subscriber_to_channel(websocket, channel, message)
       super(websocket, channel, message)
-      async.redis_action('subscribe', channel, message)
+      async.redis_action('subscribe', websocket, channel, message)
     end
 
     # method used to unsubscribe from a channel
@@ -33,10 +33,11 @@ module CelluloidPubsub
     # @return [void]
     #
     # @api public
-    def unsubscribe_from_channel(channel)
-      super(channel)
-      async.redis_action('unsubscribe', channel)
+    def unsubscribe_clients(websocket, channel, json_data)
+      super(websocket, channel, json_data)
+      async.redis_action('unsubscribe', websocket, channel)
     end
+
 
     # method used to unsubscribe  from all channels
     # @see #redis_action
@@ -46,20 +47,7 @@ module CelluloidPubsub
     # @api public
     def unsubscribe_all(websocket, channel, data)
       info 'clearing connections'
-      shutdown
-    end
-
-    # method used to shutdown the reactor and unsubscribe from all channels
-    # @see #redis_action
-    #
-    # @return [void]
-    #
-    # @api public
-    def shutdown
-      @channels.dup.each do |channel|
-        redis_action('unsubscribe', channel) unless ENV['RACK_ENV'] == 'test'
-      end if @channels.present?
-      super
+      shutdown(websocket)
     end
 
     # method used to publish event using redis
@@ -102,10 +90,12 @@ module CelluloidPubsub
     #
     # @api private
     def run_the_eventmachine(&block)
-      EM.run do
+      Thread.new do
+       EM.run do
         connection = EM::Hiredis.connect
         block.call connection
-      end
+       end
+     end
     end
 
     # method used to setup the eventmachine exception handler
@@ -157,13 +147,13 @@ module CelluloidPubsub
     # @return [void]
     #
     # @api private
-    def redis_action(action, channel = nil, message = {})
+    def redis_action(action, websocket, channel = nil, message = {})
       fetch_pubsub do |pubsub|
-        callback = prepare_redis_action(pubsub, action)
+        callback = prepare_redis_action(pubsub, websocket, action)
         success_message = action_success(action, channel, message)
         args = action_subscribe?(action) ? [channel, callback] : [channel]
         subscription = pubsub.send(action, *args)
-        register_subscription_callbacks(subscription, action, success_message)
+        register_subscription_callbacks(subscription, websocket, action, success_message)
       end
     end
 
@@ -176,10 +166,10 @@ module CelluloidPubsub
     # @return [void]
     #
     # @api private
-    def prepare_redis_action(pubsub, action)
+    def prepare_redis_action(pubsub, websocket, action)
       log_unsubscriptions(pubsub)
       proc do |subscribed_message|
-        action_subscribe?(action) ? (@websocket << subscribed_message) : log_debug(message)
+        action_subscribe?(action) ? (websocket << subscribed_message) : log_debug(message)
       end
     end
 
@@ -209,8 +199,8 @@ module CelluloidPubsub
     # @return [void]
     #
     # @api private
-    def register_subscription_callbacks(subscription, action, sucess_message = nil)
-      register_redis_callback(subscription, action, sucess_message)
+    def register_subscription_callbacks(subscription,websocket,  action, sucess_message = nil)
+      register_redis_callback(subscription, websocket, action, sucess_message)
       register_redis_error_callback(subscription, action)
     end
 
@@ -235,10 +225,10 @@ module CelluloidPubsub
     # @return [void]
     #
     # @api private
-    def register_redis_callback(subscription, action, sucess_message = nil)
+    def register_redis_callback(subscription,websocket, action, sucess_message = nil)
       subscription.callback do |subscriptions_ids|
         if sucess_message.present?
-          @websocket << sucess_message.merge('subscriptions' => subscriptions_ids).to_json
+          websocket << sucess_message.merge('subscriptions' => subscriptions_ids).to_json
         else
           log_debug "#{action} success #{sucess_message.inspect}"
         end

@@ -2,25 +2,8 @@ require 'celluloid_pubsub/reactor'
 require 'celluloid_pubsub/helper'
 module CelluloidPubsub
   # reactor used for redis pubsub
-  # @!attribute connected
-  #   @return [Boolean] returns true if already connected to redis
-  # @!attribute connection
-  #   @return [EM::Hiredis] The connection used for redis
   class RedisReactor < CelluloidPubsub::Reactor
     include CelluloidPubsub::BaseActor
-
-    attr_accessor :connected, :connection
-
-    alias_method :connected?, :connected
-
-    # returns true if already connected to redis otherwise false
-    #
-    # @return [Boolean] returns true if already connected to redis otherwise false
-    #
-    # @api public
-    def connected
-      @connected ||= false
-    end
 
     # method used to unsubscribe from a channel
     # @see #redis_action
@@ -28,8 +11,8 @@ module CelluloidPubsub
     # @return [void]
     #
     # @api public
-    def unsubscribe(channel, data)
-      super
+    def unsubscribe(websocket, channel, data)
+      super(websocket, channel, data)
       async.redis_action('unsubscribe', channel)
     end
 
@@ -39,8 +22,8 @@ module CelluloidPubsub
     # @return [void]
     #
     # @api public
-    def add_subscriber_to_channel(channel, message)
-      super
+    def add_subscriber_to_channel(websocket, channel, message)
+      super(websocket, channel, message)
       async.redis_action('subscribe', channel, message)
     end
 
@@ -51,7 +34,7 @@ module CelluloidPubsub
     #
     # @api public
     def unsubscribe_from_channel(channel)
-      super
+      super(channel)
       async.redis_action('unsubscribe', channel)
     end
 
@@ -61,7 +44,7 @@ module CelluloidPubsub
     # @return [void]
     #
     # @api public
-    def unsubscribe_all(channel, data)
+    def unsubscribe_all(websocket, channel, data)
       info 'clearing connections'
       shutdown
     end
@@ -120,9 +103,8 @@ module CelluloidPubsub
     # @api private
     def run_the_eventmachine(&block)
       EM.run do
-        @connection ||= EM::Hiredis.connect
-        @connected = true
-        block.call @connection
+        connection = EM::Hiredis.connect
+        block.call connection
       end
     end
 
@@ -144,8 +126,8 @@ module CelluloidPubsub
     # @api private
     def fetch_pubsub
       connect_to_redis do |connection|
-        @pubsub ||= connection.pubsub
-        yield @pubsub if block_given?
+        pubsub = connection.pubsub
+        yield pubsub if block_given?
       end
     end
 
